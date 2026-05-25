@@ -490,7 +490,7 @@ async function saveStock() {
   }
 }        
 async function loadReqNo() {
-    const res = await fetch("YOUR_SCRIPT_URL?action=reqno");
+    const res = await fetch("https://script.google.com/macros/s/AKfycbziHk40FkSeTL9M9cm5UeXdgsDWjLUMNZRchlnRliWHdb5NlMqx25wQqVpav3kH-kNz1w/exec?action=reqno");
     const no = await res.text();
     document.getElementById('docNo1').textContent = no;
 }
