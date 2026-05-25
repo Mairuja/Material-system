@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="th" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Material Requisition & Inventory System</title>
+    <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                fontFamily: {
+                    main: ['IBM Plex Sans Thai', 'Noto Sans SC', 'system-ui', 'sans-serif']
+                }
+            }
+        }
+    }
+    </script>
+    <style>
+@media print {
+  .no-print { display: none !important; }
+  .print-break { page-break-before: always; }
+  body { font-size: 10px; }
+  .form-card { box-shadow: none !important; border: 1px solid #ccc !important; }
+}
+html, body { height: 100%; }
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type="number"] { -moz-appearance: textfield; }
+.field-input { transition: border-color 0.15s ease; }
+.field-input:focus { border-color: #1e40af; box-shadow: 0 0 0 2px rgba(30,64,175,0.08); }
+.diff-highlight { background: #fef2f2 !important; }
+.diff-highlight td { color: #991b1b; }
+    </style>
+    <style>body { box-sizing: border-box; }</style>
+</head>
+<body class="h-full overflow-auto bg-slate-50 font-main text-slate-800">
+    <div class="w-full min-h-full p-4 md:p-6 lg:p-8">
+        <!-- Navigation Tabs -->
+        <div class="no-print max-w-6xl mx-auto mb-4 flex gap-2"><button id="tab1" onclick="showForm(1)" class="px-4 py-2 rounded-lg text-sm font-medium bg-blue-900 text-white">ใบเบิกวัสดุ / Requisition / 领料单</button> <button id="tab2" onclick="showForm(2)" class="px-4 py-2 rounded-lg text-sm font-medium bg-slate-200 text-slate-600 hover:bg-slate-300">ตรวจนับสต็อก / Stock Count / 盘点表</button>
+        </div>
+
+        <!-- ==================== FORM 1: MATERIAL REQUISITION ==================== -->
+        <div id="form1" class="max-w-6xl mx-auto">
+            <div class="form-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 md:p-7">
+                <!-- Header -->
+                <div class="flex items-center justify-between mb-5 pb-4 border-b border-slate-100">
+                    <div>
+                        <h1 id="f1-title" class="text-lg md:text-xl font-bold text-blue-900">ใบเบิกวัสดุ / Material Requisition / 领料申请单</h1>
+                        <p id="f1-company" class="text-xs text-slate-400 mt-0.5">บริษัท เอฟทีแอล พรีซิชั่น จำกัด / FTL Precision Co., Ltd. </p>
+                    </div>
+                    <div class="text-right text-xs text-slate-400">
+                        <span>เลขที่/No./编号:</span>
+                        <span class="ml-1 font-mono text-slate-600" id="docNo1">REQ-</span>
+                    </div>
+                </div>
+
+                <!-- Section A: Requester Info -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">ผู้เบิก (Requester / 申请人)</label>
+                        <input type="text" class="field-input w-full border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none" placeholder="ชื่อ-สกุล">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">แผนก (Dept. / 部门)</label>
+                        <select class="field-input w-full border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none bg-white">
+                            <option value="">เลือกแผนก...</option>
+                            <option>ผลิต / Production / 生产部</option>
+                            <option>คลังสินค้า / Warehouse / 仓库</option>
+                            <option>ซ่อมบำรุง / Maintenance / 维修部</option>
+                            <option>สำนักงาน / Office / 办公室</option>
+                            <option>QC / Quality / 质量部</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 mb-1">วันที่ (Date / 日期)</label>
+                        <input type="date" class="field-input w-full border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none" id="reqDate">
+                    </div>
+                </div>
+                <datalist id="itemList"></datalist>
+                <!-- Section B: Material Table -->
+                <div class="mb-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <h2 class="text-sm font-semibold text-slate-700">รายการวัสดุ (Items / 物料明细)</h2>
+                        <button onclick="addReqRow()" class="no-print flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-900 px-2 py-1 rounded hover:bg-blue-50">
+                            <i data-lucide="plus" style="width:14px;height:14px"></i> เพิ่มแถว/Add
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto rounded-lg border border-slate-200">
+                        <table class="w-full text-sm" id="reqTable">
+                            <thead>
+                                <tr class="bg-slate-50 text-xs text-slate-500 font-medium">
+                                    <th class="px-3 py-2 text-left w-8">#</th>
+                                    <th class="px-3 py-2 text-left">ชื่อรายการ (Item / 品名)</th>
+                                    <th class="px-3 py-2 text-center w-20">จำนวน (Qty / 数量)</th>
+                                    <th class="px-3 py-2 text-center w-24">หน่วย (Unit / 单位)</th>
+                                    <th class="px-3 py-2 text-center w-24">ราคา/หน่วย (Price / 单价)</th>
+                                    <th class="px-3 py-2 text-center w-24">รวม (Total / 合计)</th>
+                                    <th class="px-3 py-2 text-center w-10 no-print"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="reqBody"></tbody>
+                            <tfoot>
+                                <tr class="bg-slate-50 border-t border-slate-200">
+                                    <td colspan="5" class="px-3 py-2 text-right text-xs font-semibold text-slate-600">รวมทั้งหมด (Grand Total / 总计)</td>
+                                    <td class="px-3 py-2 text-center text-sm font-bold text-blue-900" id="grandTotal">0.00</td>
+                                    <td class="no-print"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Section C: Purpose -->
+                <div class="mb-5">
+                    <label class="block text-xs font-medium text-slate-500 mb-1">วัตถุประสงค์ (Purpose / 用途)</label>
+                    <textarea class="field-input w-full border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none resize-none" rows="2" placeholder="ระบุเหตุผลการเบิก..."></textarea>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="mb-5 flex gap-2 no-print">
+                    <button onclick="submitRequisition()" class="flex items-center gap-2 px-4 py-2 bg-blue-900 text-white text-sm rounded-lg hover:bg-blue-800">
+                        💾 บันทึก / Save / 保存
+                    </button>
+                    <button onclick="clearRequisition()" class="flex items-center gap-2 px-4 py-2 bg-slate-400 text-white text-sm rounded-lg hover:bg-slate-500">
+                        🔄 ล้าง / Clear / 清除
+                    </button>
+                </div>
+
+                <!-- Section D: Approval -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-slate-100">
+                    <div class="text-center">
+                        <div class="h-12 border-b border-dashed border-slate-300 mb-1"></div>
+                        <p class="text-xs text-slate-500">ผู้เบิก (Requester / 申请人)</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="h-12 border-b border-dashed border-slate-300 mb-1"></div>
+                        <p class="text-xs text-slate-500">ผู้อนุมัติ (Approver / 审批人)</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="h-12 border-b border-dashed border-slate-300 mb-1"></div>
+                        <p class="text-xs text-slate-500">ผู้จ่ายวัสดุ (Issuer / 发料人)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ==================== FORM 2: STOCK COUNT ==================== -->
+        <div id="form2" class="max-w-6xl mx-auto hidden">
+            <div class="form-card bg-white rounded-xl shadow-sm border border-slate-200 p-5 md:p-7">
+                <div class="flex items-center justify-between mb-5 pb-4 border-b border-slate-100">
+                    <div>
+                        <h1 id="f2-title" class="text-lg md:text-xl font-bold text-blue-900">ใบตรวจนับสต็อก / Inventory Stock Count / 库存盘点表</h1>
+                        <p id="f2-company" class="text-xs text-slate-400 mt-0.5">บริษัท ตัวอย่าง จำกัด / Sample Co., Ltd. / 示例有限公司</p>
+                    </div>
+                    <div class="flex gap-3 text-xs text-slate-400">
+                        <div>
+                            วันที่/Date: <input type="date" class="field-input border border-slate-200 rounded px-2 py-1 text-xs outline-none" id="countDate">
+                        </div>
+                        <div>
+                            ผู้นับ/Counter: <input type="text" class="field-input border border-slate-200 rounded px-2 py-1 text-xs outline-none w-24" placeholder="ชื่อ">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between mb-2">
+                    <h2 class="text-sm font-semibold text-slate-700">รายการตรวจนับ (Count Items / 盘点明细)</h2>
+                    <div class="flex gap-2">
+                        <button onclick="submitStock()" class="no-print flex items-center gap-2 text-xs font-medium text-blue-900 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-50">
+                            💾 บันทึก / Save / 保存
+                        </button>
+                        <button onclick="clearStock()" class="no-print flex items-center gap-2 text-xs font-medium text-slate-600 hover:text-slate-800 px-2 py-1 rounded hover:bg-slate-100">
+                            🔄 ล้าง / Clear / 清除
+                        </button>
+                        <button onclick="addStockRow()" class="no-print flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-900 px-2 py-1 rounded hover:bg-blue-50">
+                            <i data-lucide="plus" style="width:14px;height:14px"></i> เพิ่มแถว/Add
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto rounded-lg border border-slate-200">
+                    <table class="w-full text-sm" id="stockTable">
+                        <thead>
+                            <tr class="bg-slate-50 text-xs text-slate-500 font-medium">
+                                <th class="px-2 py-2 text-left w-8">#</th>
+                                <th class="px-2 py-2 text-left w-28">รหัส (Code / 编码)</th>
+                                <th class="px-2 py-2 text-left">ชื่อรายการ (Item / 品名)</th>
+                                <th class="px-2 py-2 text-center w-24">ที่เก็บ (Loc. / 库位)</th>
+                                <th class="px-2 py-2 text-center w-20">ในระบบ (System / 系统数)</th>
+                                <th class="px-2 py-2 text-center w-20">นับจริง (Actual / 实盘数)</th>
+                                <th class="px-2 py-2 text-center w-20">ผลต่าง (Diff / 差异)</th>
+                                <th class="px-2 py-2 text-left w-28">หมายเหตุ (Note / 备注)</th>
+                                <th class="px-2 py-2 w-10 no-print"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="stockBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-100">
+                    <div class="text-center">
+                        <div class="h-12 border-b border-dashed border-slate-300 mb-1"></div>
+                        <p class="text-xs text-slate-500">ผู้ตรวจนับ (Counter / 盘点人)</p>
+                    </div>
+                    <div class="text-center">
+                        <div class="h-12 border-b border-dashed border-slate-300 mb-1"></div>
+                        <p class="text-xs text-slate-500">ผู้ตรวจสอบ (Verifier / 审核人)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Print Button -->
+        <div class="no-print max-w-6xl mx-auto mt-4 flex justify-end">
+            <button onclick="window.print()" class="flex items-center gap-2 px-4 py-2 bg-slate-800 text-white text-sm rounded-lg hover:bg-slate-700">
+                <i data-lucide="printer" style="width:14px;height:14px"></i> พิมพ์ / Print / 打印
+            </button>
+        </div>
+    </div>
+
+    <script>
+    // Tab switching
+    function showForm(n) {
+        document.getElementById('form1').classList.toggle('hidden', n !== 1);
+        document.getElementById('form2').classList.toggle('hidden', n !== 2);
+        document.getElementById('tab1').className = n === 1 ? 'px-4 py-2 rounded-lg text-sm font-medium bg-blue-900 text-white' : 'px-4 py-2 rounded-lg text-sm font-medium bg-slate-200 text-slate-600 hover:bg-slate-300';
+        document.getElementById('tab2').className = n === 2 ? 'px-4 py-2 rounded-lg text-sm font-medium bg-blue-900 text-white' : 'px-4 py-2 rounded-lg text-sm font-medium bg-slate-200 text-slate-600 hover:bg-slate-300';
+    }
+
+    // Set today's date
+    document.getElementById('reqDate').valueAsDate = new Date();
+    document.getElementById('countDate').valueAsDate = new Date();
+
+    // Generate doc number
+    document.getElementById('docNo1').textContent = 'REQ-' + new Date().toISOString().slice(0,10).replace(/-/g,'');
+
+    // ===== REQUISITION TABLE =====
+    let reqRowId = 0;
+    function addReqRow() {
+        reqRowId++;
+        const tr = document.createElement('tr');
+        tr.className = 'border-t border-slate-100';
+        tr.innerHTML = `
+            <td class="px-3 py-1.5 text-xs text-slate-400">${reqRowId}</td>
+            <td class="px-1 py-1"><input list="itemList"class="field-input w-full border border-slate-200 rounded px-2 py-1.5 text-sm outline-none"placeholder="ชื่อวัสดุ..."></td>
+            <td class="px-1 py-1"><input type="number" min="0" class="field-input w-full border border-slate-200 rounded px-2 py-1.5 text-sm text-center outline-none qty-input" placeholder="0" oninput="calcReqRow(this)"></td>
+            <td class="px-1 py-1"><select class="field-input w-full border border-slate-200 rounded px-2 py-1.5 text-sm outline-none bg-white"><option>ชิ้น/pc/个</option><option>กล่อง/box/箱</option><option>ม้วน/roll/卷</option><option>กก./kg/公斤</option><option>ลิตร/L/升</option><option>เมตร/m/米</option></select></td>
+            <td class="px-1 py-1"><input type="number" min="0" step="0.01" class="field-input w-full border border-slate-200 rounded px-2 py-1.5 text-sm text-center outline-none price-input" placeholder="0.00" oninput="calcReqRow(this)"></td>
+            <td class="px-3 py-1.5 text-center text-sm font-medium row-total">0.00</td>
+            <td class="px-1 py-1 no-print"><button onclick="this.closest('tr').remove();calcGrandTotal();" class="text-slate-300 hover:text-red-500"><i data-lucide="x" style="width:14px;height:14px"></i></button></td>
+        `;
+        document.getElementById('reqBody').appendChild(tr);
+        lucide.createIcons();
+        tr.querySelector('input').focus();
+    }
+
+    function calcReqRow(el) {
+        const tr = el.closest('tr');
+        const qty = parseFloat(tr.querySelector('.qty-input').value) || 0;
+        const price = parseFloat(tr.querySelector('.price-input').value) || 0;
+        tr.querySelector('.row-total').textContent = (qty * price).toFixed(2);
+        calcGrandTotal();
+    }
+
+    function calcGrandTotal() {
+        let total = 0;
+        document.querySelectorAll('#reqBody .row-total').forEach(el => { total += parseFloat(el.textContent) || 0; });
+        document.getElementById('grandTotal').textContent = total.toFixed(2);
+    }
+
+    // Init with 3 rows
+    for (let i = 0; i < 3; i++) addReqRow();
+
+    // ===== STOCK COUNT TABLE =====
+    let stockRowId = 0;
+    function addStockRow() {
+        stockRowId++;
+        const tr = document.createElement('tr');
+        tr.className = 'border-t border-slate-100 stock-row';
+        tr.innerHTML = `
+            <td class="px-2 py-1.5 text-xs text-slate-400">${stockRowId}</td>
+            <td class="px-1 py-1"><input type="text" class="field-input w-full border border-slate-200 rounded px-2 py-1.5 text-xs outline-none" placeholder="SKU"></td>
+            <td class="px-1 py-1"><input type="text" class="field-input w-full border border-slate-200 rounded px-2 py-1.5 text-sm outline-none" placeholder="ชื่อรายการ"></td>
+            <td class="px-1 py-1"><input type="text" class="field-input w-full border border-slate-200 rounded px-2 py-1.5 text-xs text-center outline-none" placeholder="A1-01"></td>
+            <td class="px-1 py-1"><input type="number" class="field-input w-full border border-slate-200 rounded px-2 py-1.5 text-sm text-center outline-none bg-slate-50 sys-qty" placeholder="0" oninput="calcDiff(this)"></td>
+            <td class="px-1 py-1"><input type="number" class="field-input w-full border border-slate-200 rounded px-2 py-1.5 text-sm text-center outline-none actual-qty" placeholder="0" oninput="calcDiff(this)"></td>
+            <td class="px-2 py-1.5 text-center text-sm font-medium diff-val">0</td>
+            <td class="px-1 py-1"><input type="text" class="field-input w-full border border-slate-200 rounded px-2 py-1.5 text-xs outline-none" placeholder="—"></td>
+            <td class="px-1 py-1 no-print"><button onclick="this.closest('tr').remove()" class="text-slate-300 hover:text-red-500"><i data-lucide="x" style="width:14px;height:14px"></i></button></td>
+        `;
+        document.getElementById('stockBody').appendChild(tr);
+        lucide.createIcons();
+        tr.querySelector('input').focus();
+    }
+
+    function calcDiff(el) {
+        const tr = el.closest('tr');
+        const sys = parseFloat(tr.querySelector('.sys-qty').value) || 0;
+        const actual = parseFloat(tr.querySelector('.actual-qty').value) || 0;
+        const diff = actual - sys;
+        const diffEl = tr.querySelector('.diff-val');
+        diffEl.textContent = diff;
+        if (diff !== 0) {
+            tr.classList.add('diff-highlight');
+            diffEl.textContent = (diff > 0 ? '+' : '') + diff;
+        } else {
+            tr.classList.remove('diff-highlight');
+        }
+    }
+
+    // Init stock with 5 rows
+    for (let i = 0; i < 5; i++) addStockRow();
+
+    // Enter key navigation
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && e.target.matches('input, select')) {
+            e.preventDefault();
+            const inputs = Array.from(document.querySelectorAll('input:not([type=date]), select'));
+            const idx = inputs.indexOf(e.target);
+            if (idx < inputs.length - 1) inputs[idx + 1].focus();
+        }
+    });
+
+    lucide.createIcons();
+
+    // ===== SAVE FUNCTIONS =====
+    function submitRequisition() {
+        const requester = document.querySelector('#form1 input[placeholder="ชื่อ-สกุล"]').value;
+        const department = document.querySelector('#form1 select').value;
+        const date = document.getElementById('reqDate').value;
+        const purpose = document.querySelector('#form1 textarea').value;
+
+        if (!requester || !department || !date || !purpose) {
+            alert('⚠️ โปรดกรอกข้อมูลที่จำเป็นทั้งหมด / Please fill in all required fields');
+            return;
+        }
+
+        const items = [];
+        document.querySelectorAll('#reqBody tr').forEach(row => {
+            const itemName = row.querySelector('input[placeholder="ชื่อวัสดุ..."]').value;
+            const qty = row.querySelector('.qty-input').value;
+            const unit = row.querySelector('select').value;
+            const price = row.querySelector('.price-input').value;
+            const total = row.querySelector('.row-total').textContent;
+
+            if (itemName && qty) {
+                items.push({ itemName, qty, unit, price, total });
+            }
+        });
+
+        if (items.length === 0) {
+            alert('⚠️ โปรดเพิ่มรายการวัสดุ / Please add at least one item');
+            return;
+        }
+
+        const data = {
+            docNo: document.getElementById('docNo1').textContent,
+            requester,
+            department,
+            date,
+            purpose,
+            items,
+            grandTotal: document.getElementById('grandTotal').textContent,
+            savedAt: new Date().toLocaleString('th-TH')
+        };
+
+        console.log('✅ Requisition saved:', data);
+        localStorage.setItem('lastRequisition', JSON.stringify(data));
+        alert('✅ บันทึกสำเร็จ / Saved successfully\n\nDoc No: ' + data.docNo);
+    }
+
+    function submitStock() {
+        const counterName = document.querySelector('#form2 input[placeholder="ชื่อ"]').value;
+        const countDate = document.getElementById('countDate').value;
+
+        if (!counterName || !countDate) {
+            alert('⚠️ โปรดกรอกข้อมูลที่จำเป็น / Please fill in counter name and date');
+            return;
+        }
+
+        const items = [];
+        let discrepancies = 0;
+        document.querySelectorAll('#stockBody tr').forEach(row => {
+            const code = row.querySelector('input[placeholder="SKU"]').value;
+            const itemName = row.querySelector('input[placeholder="ชื่อรายการ"]').value;
+            const location = row.querySelector('input[placeholder="A1-01"]').value;
+            const sysQty = row.querySelector('.sys-qty').value;
+            const actualQty = row.querySelector('.actual-qty').value;
+            const diff = row.querySelector('.diff-val').textContent;
+            const note = row.querySelector('input[placeholder="—"]').value;
+
+            if (code && itemName && actualQty) {
+                items.push({ code, itemName, location, sysQty, actualQty, diff, note });
+                if (diff !== '0') discrepancies++;
+            }
+        });
+
+        if (items.length === 0) {
+            alert('⚠️ โปรดเพิ่มรายการ / Please add at least one item');
+            return;
+        }
+
+        const data = {
+            counterName,
+            countDate,
+            items,
+            discrepancies,
+            savedAt: new Date().toLocaleString('th-TH')
+        };
+
+        console.log('✅ Stock count saved:', data);
+        localStorage.setItem('lastStockCount', JSON.stringify(data));
+        alert('✅ บันทึกสำเร็จ / Saved successfully\nพบความแตกต่าง ' + discrepancies + ' รายการ / Found ' + discrepancies + ' discrepancies');
+    }
+
+    async function submitRequisition() {
+    const rows = document.querySelectorAll('#reqBody tr');
+    const items = [];
+
+    rows.forEach(tr => {
+        const inputs = tr.querySelectorAll('input, select');
+
+        const name = inputs[0].value;
+        const qty = inputs[1].value;
+        const unit = inputs[2].value;
+        const price = inputs[3].value;
+        const total = tr.querySelector('.row-total').textContent;
+
+        if (name && qty) {
+            items.push({ name, qty, unit, price, total });
+        }
+    });
+
+    const data = {
+        type: "requisition",
+        requester: document.querySelector('input[placeholder="ชื่อ-สกุล"]').value,
+        dept: document.querySelector('select').value,
+        date: document.getElementById('reqDate').value,
+        items
+    };
+
+    try {
+        await fetch("https://script.google.com/macros/s/AKfycbziHk40FkSeTL9M9cm5UeXdgsDWjLUMNZRchlnRliWHdb5NlMqx25wQqVpav3kH-kNz1w/exec", {
+            method: "POST",
+            body: JSON.stringify(data)
+        });
+
+        alert("บันทึกสำเร็จ ✅");
+
+    } catch (err) {
+        alert("เกิดข้อผิดพลาด ❌");
+        console.error(err);
+    }
+}
+async function loadReqNo() {
+    const res = await fetch("YOUR_SCRIPT_URL?action=reqno");
+    const no = await res.text();
+    document.getElementById('docNo1').textContent = no;
+}
+
+loadReqNo();
+
+let itemList = [];
+
+async function loadItems() {
+    const res = await fetch("https://script.google.com/macros/s/AKfycbziHk40FkSeTL9M9cm5UeXdgsDWjLUMNZRchlnRliWHdb5NlMqx25wQqVpav3kH-kNz1w/exec?action=items");
+    itemList = await res.json();
+    populateDatalist();
+}
+loadItems();
+loadItems().then(populateDatalist);
+
+    // ===== CLEAR FUNCTIONS =====
+    function clearRequisition() {
+        if (confirm('⚠️ คุณแน่ใจหรือ? / Are you sure? / 确定要清除吗?')) {
+            // Clear form inputs
+            document.querySelector('#form1 input[placeholder="ชื่อ-สกุล"]').value = '';
+            document.querySelector('#form1 select').value = '';
+            document.getElementById('reqDate').valueAsDate = new Date();
+            document.querySelector('#form1 textarea').value = '';
+
+            // Clear table rows
+            const tbody = document.getElementById('reqBody');
+            while (tbody.rows.length > 3) {
+                tbody.deleteRow(0);
+            }
+
+            // Clear remaining rows
+            document.querySelectorAll('#reqBody tr').forEach(row => {
+                row.querySelector('input[type="text"]').value = '';
+                row.querySelector('.qty-input').value = '';
+                row.querySelector('select').value = '';
+                row.querySelector('.price-input').value = '';
+                row.querySelector('.row-total').textContent = '0.00';
+            });
+
+            document.getElementById('grandTotal').textContent = '0.00';
+            alert('✅ ลบข้อมูลเรียบร้อย / Cleared successfully');
+        }
+    }
+
+    function clearStock() {
+        if (confirm('⚠️ คุณแน่ใจหรือ? / Are you sure? / 确定要清除吗?')) {
+            // Clear form inputs
+            document.querySelector('#form2 input[placeholder="ชื่อ"]').value = '';
+            document.getElementById('countDate').valueAsDate = new Date();
+
+            // Clear table rows
+            const tbody = document.getElementById('stockBody');
+            while (tbody.rows.length > 5) {
+                tbody.deleteRow(0);
+                
+            }
+
+            // Clear remaining rows
+            document.querySelectorAll('#stockBody tr').forEach(row => {
+                row.querySelector('input[placeholder="SKU"]').value = '';
+                row.querySelector('input[placeholder="ชื่อรายการ"]').value = '';
+                row.querySelector('input[placeholder="A1-01"]').value = '';
+                row.querySelector('.sys-qty').value = '';
+                row.querySelector('.actual-qty').value = '';
+                row.querySelector('.diff-val').textContent = '0';
+                row.querySelector('input[placeholder="—"]').value = '';
+                row.classList.remove('diff-highlight');
+            });
+
+            alert('✅ ลบข้อมูลเรียบร้อย / Cleared successfully');
+        }
+    }
+    </script>
+</body>
+</html>
