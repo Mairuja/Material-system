@@ -237,7 +237,6 @@ input[type="number"] { -moz-appearance: textfield; }
     document.getElementById('docNo1').textContent = 'REQ-' + new Date().toISOString().slice(0,10).replace(/-/g,'');
 
     // ===== REQUISITION TABLE =====
-    let reqRowId = 0;
    function addReqRow() {
     const tbody = document.getElementById('reqBody');
     const rowCount = tbody.children.length + 1;
