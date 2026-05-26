@@ -90,7 +90,7 @@ input[type="number"] { -moz-appearance: textfield; }
                     </div>
                     <div class="overflow-x-auto rounded-lg border border-slate-200">
                         <table class="w-full text-sm" id="reqTable">
-                            <thead>
+                            <<thead class="hidden md:table-header-group">>
                                 <tr class="bg-slate-50 text-xs text-slate-500 font-medium">
                                     <th class="px-3 py-2 text-left w-8">#</th>
                                     <th class="px-3 py-2 text-left">ชื่อรายการ (Item / 品名)</th>
@@ -237,36 +237,83 @@ input[type="number"] { -moz-appearance: textfield; }
     document.getElementById('docNo1').textContent = 'REQ-' + new Date().toISOString().slice(0,10).replace(/-/g,'');
 
     // ===== REQUISITION TABLE =====
-   function addReqRow() {
+function addReqRow() {
     const tbody = document.getElementById('reqBody');
     
     const tr = document.createElement('tr');
-    tr.className = 'border-t border-slate-100';
-          tr.innerHTML = `
-            <td class="px-3 py-1.5 text-xs text-slate-400 row-no"></td>
-        <td class="px-1 py-1">
-            <input list="itemList" class="field-input w-full border border-slate-200 rounded px-2 py-1.5 text-sm outline-none" placeholder="ชื่อวัสดุ...">
-        </td>
-        <td class="px-1 py-1">
-            <input type="number" min="0" class="field-input w-full border border-slate-200 rounded px-2 py-1.5 text-sm text-center outline-none qty-input" placeholder="0" oninput="calcReqRow(this)">
-        </td>
-        <td class="px-1 py-1">
-            <select class="field-input w-full border border-slate-200 rounded px-2 py-1.5 text-sm outline-none bg-white">
-                <option>ชิ้น/pc/个</option>
-                <option>กล่อง/box/箱</option>
-                <option>ม้วน/roll/卷</option>
-                <option>กก./kg/公斤</option>
-                <option>ลิตร/L/升</option>
-                <option>เมตร/m/米</option>
-            </select>
-        </td>
-        <td class="px-1 py-1">
-            <input type="number" min="0" step="0.01" class="field-input w-full border border-slate-200 rounded px-2 py-1.5 text-sm text-center outline-none price-input" placeholder="0.00" oninput="calcReqRow(this)">
-        </td>
-        <td class="px-3 py-1.5 text-center text-sm font-medium row-total">0.00</td>
-        <td class="px-1 py-1">
-            <button onclick="removeRow(this)" class="text-red-500 hover:text-red-700">❌</button>
-        </td>
+    tr.className = `
+        border-t border-slate-100 
+        md:table-row flex flex-col md:flex-row 
+        bg-white md:bg-transparent 
+        rounded-lg md:rounded-none 
+        shadow md:shadow-none 
+        mb-3 md:mb-0 p-2 md:p-0
+    `;
+
+    tr.innerHTML = `
+    <!-- ลำดับ -->
+    <td class="px-3 py-1 text-xs text-slate-400 md:table-cell flex justify-between">
+        <span class="md:hidden font-medium">#</span>
+        <span class="row-no"></span>
+    </td>
+
+    <!-- ชื่อ -->
+    <td class="px-1 py-1 md:table-cell flex flex-col">
+        <span class="md:hidden text-xs text-slate-500">
+            ชื่อรายการ / Item / 品名
+        </span>
+        <input list="itemList" 
+            class="field-input w-full border border-slate-200 rounded px-2 py-1.5 text-sm"
+            placeholder="ชื่อวัสดุ...">
+    </td>
+
+    <!-- จำนวน -->
+    <td class="px-1 py-1 md:table-cell flex flex-col">
+        <span class="md:hidden text-xs text-slate-500">
+            จำนวน / Qty / 数量
+        </span>
+        <input type="number" min="0"
+            class="field-input w-full border border-slate-200 rounded px-2 py-1.5 text-sm text-center qty-input"
+            oninput="calcReqRow(this)">
+    </td>
+
+    <!-- หน่วย -->
+    <td class="px-1 py-1 md:table-cell flex flex-col">
+        <span class="md:hidden text-xs text-slate-500">
+            หน่วย / Unit / 单位
+        </span>
+        <select class="field-input w-full border border-slate-200 rounded px-2 py-1.5 text-sm">
+            <option>ชิ้น/pc/个</option>
+            <option>กล่อง/box/箱</option>
+            <option>ม้วน/roll/卷</option>
+            <option>กก./kg/公斤</option>
+            <option>ลิตร/L/升</option>
+            <option>เมตร/m/米</option>
+        </select>
+    </td>
+
+    <!-- ราคา -->
+    <td class="px-1 py-1 md:table-cell flex flex-col">
+        <span class="md:hidden text-xs text-slate-500">
+            ราคา/หน่วย / Price / 单价
+        </span>
+        <input type="number" min="0" step="0.01"
+            class="field-input w-full border border-slate-200 rounded px-2 py-1.5 text-sm text-center price-input"
+            oninput="calcReqRow(this)">
+    </td>
+
+    <!-- รวม -->
+    <td class="px-3 py-1.5 md:table-cell flex justify-between">
+        <span class="md:hidden text-xs text-slate-500">
+            รวม / Total / 合计
+        </span>
+        <span class="row-total font-medium">0.00</span>
+    </td>
+
+    <!-- ลบ -->
+    <td class="px-1 py-1 md:table-cell text-right">
+        <button onclick="removeRow(this)" class="text-red-500 text-sm">✕</button>
+    </td>
     `;
 
     tbody.appendChild(tr);
