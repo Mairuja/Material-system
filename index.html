@@ -245,7 +245,7 @@ input[type="number"] { -moz-appearance: textfield; }
     const tr = document.createElement('tr');
     tr.className = 'border-t border-slate-100';
           tr.innerHTML = `
-            <td class="px-3 py-1.5 text-xs text-slate-400" row-no></td>
+            <td class="px-3 py-1.5 text-xs text-slate-400" row-no>1</td>
             <td class="px-1 py-1"><input list="itemList"class="field-input w-full border border-slate-200 rounded px-2 py-1.5 text-sm outline-none"placeholder="ชื่อวัสดุ..."></td>
             <td class="px-1 py-1"><input type="number" min="0" class="field-input w-full border border-slate-200 rounded px-2 py-1.5 text-sm text-center outline-none qty-input" placeholder="0" oninput="calcReqRow(this)"></td>
             <td class="px-1 py-1"><select class="field-input w-full border border-slate-200 rounded px-2 py-1.5 text-sm outline-none bg-white"><option>ชิ้น/pc/个</option><option>กล่อง/box/箱</option><option>ม้วน/roll/卷</option><option>กก./kg/公斤</option><option>ลิตร/L/升</option><option>เมตร/m/米</option></select></td>
