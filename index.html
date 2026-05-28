@@ -399,50 +399,6 @@ input[type="number"] { -moz-appearance: textfield; }
         alert('✅ บันทึกสำเร็จ / Saved successfully\n\nDoc No: ' + data.docNo);
     }
 
-    function submitStock() {
-        const counterName = document.querySelector('#form2 input[placeholder="ชื่อ"]').value;
-        const countDate = document.getElementById('countDate').value;
-
-        if (!counterName || !countDate) {
-            alert('⚠️ โปรดกรอกข้อมูลที่จำเป็น / Please fill in counter name and date');
-            return;
-        }
-
-        const items = [];
-        let discrepancies = 0;
-        document.querySelectorAll('#stockBody tr').forEach(row => {
-            const code = row.querySelector('input[placeholder="SKU"]').value;
-            const name = row.querySelector('input[placeholder="ชื่อรายการ"]').value;
-            const location = row.querySelector('input[placeholder="A1-01"]').value;
-            const systemQty = row.querySelector('.sys-qty').value;
-            const actualQty = row.querySelector('.actual-qty').value;
-            const diff = row.querySelector('.diff-val').textContent;
-            const remark = row.querySelector('input[placeholder="—"]').value;
-
-            if (code && itemName && actualQty) {
-                items.push({ code, name, location, systemQty, actualQty, diff, remark });
-                if (diff !== '0') discrepancies++;
-            }
-        });
-
-        if (items.length === 0) {
-            alert('⚠️ โปรดเพิ่มรายการ / Please add at least one item');
-            return;
-        }
-
-        const data = {
-            counterName,
-            countDate,
-            items,
-            discrepancies,
-            savedAt: new Date().toLocaleString('th-TH')
-        };
-
-        console.log('✅ Stock count saved:', data);
-        localStorage.setItem('lastStockCount', JSON.stringify(data));
-        alert('✅ บันทึกสำเร็จ / Saved successfully\nพบความแตกต่าง ' + discrepancies + ' รายการ / Found ' + discrepancies + ' discrepancies');
-    }
-
     async function submitRequisition() {
     const rows = document.querySelectorAll('#reqBody tr');
     const items = [];
@@ -482,58 +438,94 @@ input[type="number"] { -moz-appearance: textfield; }
         console.error(err);
     }
 }
-async function saveStock() {
-  const rows = document.querySelectorAll('#stockBody tr');
+       async function submitStock() {
+        const counterName = document.querySelector('#form2 input[placeholder="ชื่อ"]').value;
+        const countDate = document.getElementById('countDate').value;
 
-  const data = [];
+        if (!counterName || !countDate) {
+            alert('⚠️ โปรดกรอกข้อมูลที่จำเป็น / Please fill in counter name and date');
+            return;
+        }
 
-  rows.forEach(tr => {
-    const item = {
-      code: tr.children[1].querySelector('input').value,
-      name: tr.children[2].querySelector('input').value,
-      location: tr.children[3].querySelector('input').value,
-      systemQty: tr.children[4].querySelector('input').value,
-      actualQty: tr.children[5].querySelector('input').value,
-      diff: tr.children[6].textContent,
-      remark: tr.children[7].querySelector('input').value
-    };
+        const items = [];
+        let discrepancies = 0;
+        document.querySelectorAll('#stockBody tr').forEach(row => {
+            const code = row.querySelector('input[placeholder="SKU"]').value;
+            const name = row.querySelector('input[placeholder="ชื่อรายการ"]').value;
+            const location = row.querySelector('input[placeholder="A1-01"]').value;
+            const systemQty = row.querySelector('.sys-qty').value;
+            const actualQty = row.querySelector('.actual-qty').value;
+            const diff = row.querySelector('.diff-val').textContent;
+            const note = row.querySelector('input[placeholder="—"]').value;
 
-    if (item.name) data.push(item);
-  });
+            if (code && name && actualQty) {
+                items.push({ code, name, location, systemQty, actualQty, diff, note });
+                if (diff !== '0') discrepancies++;
+            }
+        });
 
-  try {
-    const res = await fetch("https://script.google.com/macros/s/AKfycbziHk40FkSeTL9M9cm5UeXdgsDWjLUMNZRchlnRliWHdb5NlMqx25wQqVpav3kH-kNz1w/exec", {
-      method: "POST",
-      body: JSON.stringify({
-        action: "saveStock",
-        data: data
-      })
-    });
+        if (items.length === 0) {
+            alert('⚠️ โปรดเพิ่มรายการ / Please add at least one item');
+            return;
+        }
 
-    const result = await res.text();
-    alert("บันทึกสำเร็จ ✅");
+        const data = {
+            action: "saveStock",
+            counterName,
+            countDate,
+            items,
+            discrepancies,
+            savedAt: new Date().toLocaleString('th-TH')
+        };
 
-  } catch (err) {
-    alert("Error ❌: " + err.message);
-  }
-}        
-async function loadReqNo() {
-    const res = await fetch("https://script.google.com/macros/s/AKfycbziHk40FkSeTL9M9cm5UeXdgsDWjLUMNZRchlnRliWHdb5NlMqx25wQqVpav3kH-kNz1w/exec");
-    const no = await res.text();
-    document.getElementById('docNo1').textContent = no;
-}
+        try {
+            await fetch("https://script.google.com/macros/s/AKfycbziHk40FkSeTL9M9cm5UeXdgsDWjLUMNZRchlnRliWHdb5NlMqx25wQqVpav3kH-kNz1w/exec", {
+                method: "POST",
+                body: JSON.stringify(data)
+            });
 
-loadReqNo();
+            console.log('✅ Stock count saved:', data);
+            localStorage.setItem('lastStockCount', JSON.stringify(data));
+            alert('✅ บันทึกสำเร็จ / Saved successfully\nพบความแตกต่าง ' + discrepancies + ' รายการ / Found ' + discrepancies + ' discrepancies');
+        } catch (err) {
+            console.error(err);
+            alert('❌ เกิดข้อผิดพลาด / Error occurred');
+        }
+    }       
+ async function loadReqNo() {
+        try {
+            const res = await fetch("https://script.google.com/macros/s/AKfycbziHk40FkSeTL9M9cm5UeXdgsDWjLUMNZRchlnRliWHdb5NlMqx25wQqVpav3kH-kNz1w/exec");
+            const no = await res.text();
+            document.getElementById('docNo1').textContent = no;
+        } catch (err) {
+            console.error('Error loading doc number:', err);
+        }
+    }
 
-let itemList = [];
+ let itemList = [];
 
-async function loadItems() {
-    const res = await fetch("https://script.google.com/macros/s/AKfycbziHk40FkSeTL9M9cm5UeXdgsDWjLUMNZRchlnRliWHdb5NlMqx25wQqVpav3kH-kNz1w/exec?action=items");
-    itemList = await res.json();
-    populateDatalist();
-}
-loadItems();
-loadItems().then(populateDatalist);
+    async function loadItems() {
+        try {
+            const res = await fetch("https://script.google.com/macros/s/AKfycbziHk40FkSeTL9M9cm5UeXdgsDWjLUMNZRchlnRliWHdb5NlMqx25wQqVpav3kH-kNz1w/exec" + "?action=items");
+            itemList = await res.json();
+            populateDatalist();
+        } catch (err) {
+            console.error('Error loading items:', err);
+        }
+    }
+
+    function populateDatalist() {
+        const datalist = document.getElementById('itemList');
+        datalist.innerHTML = '';
+        itemList.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item;
+            datalist.appendChild(option);
+        });
+    }
+
+    loadReqNo();
+    loadItems();
 
     // ===== CLEAR FUNCTIONS =====
     function clearRequisition() {
