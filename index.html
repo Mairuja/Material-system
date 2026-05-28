@@ -412,15 +412,15 @@ input[type="number"] { -moz-appearance: textfield; }
         let discrepancies = 0;
         document.querySelectorAll('#stockBody tr').forEach(row => {
             const code = row.querySelector('input[placeholder="SKU"]').value;
-            const itemName = row.querySelector('input[placeholder="ชื่อรายการ"]').value;
+            const name = row.querySelector('input[placeholder="ชื่อรายการ"]').value;
             const location = row.querySelector('input[placeholder="A1-01"]').value;
-            const sysQty = row.querySelector('.sys-qty').value;
+            const systemQty = row.querySelector('.sys-qty').value;
             const actualQty = row.querySelector('.actual-qty').value;
             const diff = row.querySelector('.diff-val').textContent;
-            const note = row.querySelector('input[placeholder="—"]').value;
+            const remark = row.querySelector('input[placeholder="—"]').value;
 
             if (code && itemName && actualQty) {
-                items.push({ code, itemName, location, sysQty, actualQty, diff, note });
+                items.push({ code, name, location, systemQty, actualQty, diff, remark });
                 if (diff !== '0') discrepancies++;
             }
         });
