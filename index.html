@@ -438,7 +438,7 @@ input[type="number"] { -moz-appearance: textfield; }
         console.error(err);
     }
 }
-       async function submitStock() {
+         function submitStock() {
         const counterName = document.querySelector('#form2 input[placeholder="ชื่อ"]').value;
         const countDate = document.getElementById('countDate').value;
 
@@ -451,15 +451,15 @@ input[type="number"] { -moz-appearance: textfield; }
         let discrepancies = 0;
         document.querySelectorAll('#stockBody tr').forEach(row => {
             const code = row.querySelector('input[placeholder="SKU"]').value;
-            const name = row.querySelector('input[placeholder="ชื่อรายการ"]').value;
+            const itemName = row.querySelector('input[placeholder="ชื่อรายการ"]').value;
             const location = row.querySelector('input[placeholder="A1-01"]').value;
-            const systemQty = row.querySelector('.sys-qty').value;
+            const sysQty = row.querySelector('.sys-qty').value;
             const actualQty = row.querySelector('.actual-qty').value;
             const diff = row.querySelector('.diff-val').textContent;
             const note = row.querySelector('input[placeholder="—"]').value;
 
-            if (code && name && actualQty) {
-                items.push({ code, name, location, systemQty, actualQty, diff, note });
+            if (code && itemName && actualQty) {
+                items.push({ code, itemName, location, sysQty, actualQty, diff, note });
                 if (diff !== '0') discrepancies++;
             }
         });
@@ -470,7 +470,6 @@ input[type="number"] { -moz-appearance: textfield; }
         }
 
         const data = {
-            action: "saveStock",
             counterName,
             countDate,
             items,
@@ -478,20 +477,46 @@ input[type="number"] { -moz-appearance: textfield; }
             savedAt: new Date().toLocaleString('th-TH')
         };
 
-        try {
-            await fetch("https://script.google.com/macros/s/AKfycbziHk40FkSeTL9M9cm5UeXdgsDWjLUMNZRchlnRliWHdb5NlMqx25wQqVpav3kH-kNz1w/exec", {
-                method: "POST",
-                body: JSON.stringify(data)
-            });
+        console.log('✅ Stock count saved:', data);
+        localStorage.setItem('lastStockCount', JSON.stringify(data));
+        alert('✅ บันทึกสำเร็จ / Saved successfully\nพบความแตกต่าง ' + discrepancies + ' รายการ / Found ' + discrepancies + ' discrepancies');
+    }
+async function saveStock() {
+  const rows = document.querySelectorAll('#stockBody tr');
 
-            console.log('✅ Stock count saved:', data);
-            localStorage.setItem('lastStockCount', JSON.stringify(data));
-            alert('✅ บันทึกสำเร็จ / Saved successfully\nพบความแตกต่าง ' + discrepancies + ' รายการ / Found ' + discrepancies + ' discrepancies');
-        } catch (err) {
-            console.error(err);
-            alert('❌ เกิดข้อผิดพลาด / Error occurred');
-        }
-    }       
+  const data = [];
+
+  rows.forEach(tr => {
+    const item = {
+      code: tr.children[1].querySelector('input').value,
+      name: tr.children[2].querySelector('input').value,
+      location: tr.children[3].querySelector('input').value,
+      systemQty: tr.children[4].querySelector('input').value,
+      actualQty: tr.children[5].querySelector('input').value,
+      diff: tr.children[6].textContent,
+      remark: tr.children[7].querySelector('input').value
+    };
+
+    if (item.name) data.push(item);
+  });
+
+  try {
+    const res = await fetch("https://script.google.com/macros/s/AKfycbziHk40FkSeTL9M9cm5UeXdgsDWjLUMNZRchlnRliWHdb5NlMqx25wQqVpav3kH-kNz1w/exec", {
+      method: "POST",
+      body: JSON.stringify({
+        action: "saveStock",
+        data: data
+      })
+    });
+
+    const result = await res.text();
+    alert("บันทึกสำเร็จ ✅");
+
+  } catch (err) {
+    alert("Error ❌: " + err.message);
+  }
+}        
+       
  async function loadReqNo() {
         try {
             const res = await fetch("https://script.google.com/macros/s/AKfycbziHk40FkSeTL9M9cm5UeXdgsDWjLUMNZRchlnRliWHdb5NlMqx25wQqVpav3kH-kNz1w/exec");
